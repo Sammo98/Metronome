@@ -77,9 +77,9 @@ impl Metronome {
 
         // Clone the current state post previous user input from which to construct the new task.
         let cloned_token = self.current_token.clone();
-        let db = self.downbeat.clone();
+        let db = self.downbeat;
         let ts = self.time_signature.clone();
-        let tempo = self.tempo.clone();
+        let tempo = self.tempo;
 
         let _ = tokio::spawn(async move {
             tokio::select! {
@@ -132,10 +132,10 @@ impl std::fmt::Display for Metronome {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "\nWelcome to Metronome!\n\n")?;
         write!(f, "There are 4 available options:\n\n")?;
-        write!(f, "1. Change the tempo. Using the command 'bpm' followed by your desired tempo. E.g. 'bpm 100' or 'BPM 101'\n")?;
-        write!(f, "2. Toggle the downbeat. Using the command 'db' or 'downbeat'.\n")?;
-        write!(f, "3. Enter a custom time signature. Using the command 'ts' followed by your desired combination of space separated numbers. This can handle complex combinations of time signatures. E.g. for 1 bar of 4/4 followed by 1 bar of 3/4 you can use 'ts 4 3'.\n")?;
-        write!(f, "4. Quit! Using the command 'q' or 'quit' or 'exit'.\n")?;
+        writeln!(f, "1. Change the tempo. Using the command 'bpm' followed by your desired tempo. E.g. 'bpm 100' or 'BPM 101'")?;
+        writeln!(f, "2. Toggle the downbeat. Using the command 'db' or 'downbeat'.")?;
+        writeln!(f, "3. Enter a custom time signature. Using the command 'ts' followed by your desired combination of space separated numbers. This can handle complex combinations of time signatures. E.g. for 1 bar of 4/4 followed by 1 bar of 3/4 you can use 'ts 4 3'.")?;
+        writeln!(f, "4. Quit! Using the command 'q' or 'quit' or 'exit'.")?;
         write!(f, "Enter 'help' at anytime to reshow these instructions!")
     }
 }
