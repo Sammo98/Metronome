@@ -3,7 +3,6 @@ use crate::parse::{
     parse_input,
     InputType::{self, *},
 };
-use anyhow::Result;
 use std::process::Command;
 use tokio_util::sync::CancellationToken;
 
@@ -17,23 +16,11 @@ pub struct Metronome {
 }
 
 impl Metronome {
-    pub fn new() -> Self {
-        let current_token = CancellationToken::new();
-        let downbeat = false;
-        let time_signature = vec![4];
-        let tempo = 100_u16;
-        Metronome {
-            current_token,
-            downbeat,
-            time_signature,
-            tempo,
-        }
-    }
 
-    pub fn start(&mut self) {
+    pub fn start_metronome(&mut self) {
         println!("{self}");
         // Start the metronome with default tempo
-        self.restart();
+        self.restart_task();
         let mut editor = rustyline::DefaultEditor::new().expect("Failed to initialise Metronome.");
 
         // Start the input loop - This reads user input and handles accordingly to event type.
@@ -68,9 +55,11 @@ impl Metronome {
                 std::process::exit(0);
             }
         }
+        self.restart_task();
     }
 
-    fn restart(&mut self) {
+    fn restart_task(&mut self) {
+
         // Cancel the current task and instantiate a new task with a fresh cancellation token
         self.current_token.cancel();
         self.current_token = CancellationToken::new();
@@ -84,12 +73,12 @@ impl Metronome {
         let _ = tokio::spawn(async move {
             tokio::select! {
                 _ = cloned_token.cancelled() => {}
-                _ =  Metronome::run(tempo, db, ts)  => {}
+                _ =  Metronome::play(tempo, db, ts)  => {}
             }
         });
     }
 
-    async fn run(tempo: u16, with_downbeat: bool, time_signature: Vec<u8>) -> Result<()> {
+    async fn play(tempo: u16, with_downbeat: bool, time_signature: Vec<u8>) {
 
         // calculate the pause interval between playing sounds.
         let pause = ((60_f64 / tempo as f64) * NANO_CONVERTER) as u64;
@@ -101,29 +90,35 @@ impl Metronome {
         match with_downbeat {
             true => loop {
                 for ts in time_signature.iter() {
-                    Metronome::play_downbeat(pause).await?;
+                    Metronome::play_downbeat(pause).await;
 
                     for _ in 0..*ts - 1 {
-                        Metronome::play_pulse(pause).await?;
+                        Metronome::play_pulse(pause).await;
                     }
                 }
             },
             false => loop {
-                Metronome::play_pulse(pause).await?;
+                Metronome::play_pulse(pause).await;
             },
         }
     }
 
-    async fn play_downbeat(pause:u64) -> Result<()> {
-        _ = Command::new("afplay").arg("sounds/downbeat.wav").spawn()?;
+    async fn play_downbeat(pause:u64) {
+        _ = Command::new("afplay").arg("sounds/downbeat.wav").spawn();
         tokio::time::sleep(std::time::Duration::from_nanos(pause)).await;
-        Ok(())
     }
 
-    async fn play_pulse(pause:u64) -> Result<()> {
-        _ = Command::new("afplay").arg("sounds/pulse.wav").spawn()?;
+    async fn play_pulse(pause:u64) {
+        _ = Command::new("afplay").arg("sounds/pulse.wav").spawn();
         tokio::time::sleep(std::time::Duration::from_nanos(pause)).await;
-        Ok(())
+    }
+}
+
+
+impl Default for Metronome {
+    fn default() -> Self {
+        Self { 
+            current_token: Default::default(), downbeat: Default::default(), time_signature: vec![4], tempo: 100 }
     }
 }
 
