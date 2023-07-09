@@ -1,10 +1,10 @@
-pub mod cli;
+pub mod parse;
+pub mod metronome;
 
-use cli::Metronome;
+use metronome::Metronome;
 
 #[tokio::main]
 async fn main() {
     let mut metronome = Metronome::new();
     metronome.start();
 }
-
