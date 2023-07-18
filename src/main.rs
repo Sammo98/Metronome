@@ -1,5 +1,5 @@
-pub mod parse;
 pub mod metronome;
+pub mod parse;
 
 use metronome::Metronome;
 
