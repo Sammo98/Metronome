@@ -1,7 +1,4 @@
-use crate::parse::{
-    parse_input,
-    InputType::{self, *},
-};
+use crate::parse::InputType::{self, *};
 use rustyline::{Config, Editor};
 use std::{collections::HashMap, process::Command, time::Duration};
 use tokio::time::sleep;
@@ -18,7 +15,10 @@ pub struct Metronome {
 
 impl Metronome {
     pub fn start_metronome(&mut self) {
+
+        // Show help info
         println!("{self}");
+
         // Start the metronome with default tempo
         self.restart_task();
         let mut editor = get_repl();
@@ -27,11 +27,11 @@ impl Metronome {
         loop {
             let line = editor.readline(">>> ").unwrap();
             let line_lower = line.to_lowercase();
-            let input_type = parse_input(line_lower.trim());
+            let input_type = InputType::parse(line_lower.trim());
             match input_type {
                 Ok((_, valid_input)) => self.handle_input_event(valid_input),
-                Err(e) => println!(
-                    "Issue with command ({e:?})! Please enter 'help' for further instruction."
+                Err(_) => println!(
+                    "Issue with command! Please enter 'help' for further instruction."
                 ),
             }
         }
@@ -43,9 +43,9 @@ impl Metronome {
         match e {
             TempoChange(new_tempo) => self.tempo = new_tempo,
             TimeSignatureChange(new_time_signature) => self.time_signature = new_time_signature,
-            DownbeatToggle(_) => self.downbeat = !self.downbeat,
-            Help(_) => println!("{self}"),
-            Quit(_) => {
+            DownbeatToggle => self.downbeat = !self.downbeat,
+            Help => println!("{self}"),
+            Quit => {
                 self.current_token.cancel();
                 std::process::exit(0);
             }
