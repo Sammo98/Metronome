@@ -33,7 +33,7 @@ fn parse_individual_time_signature(i: &str) -> IResult<&str, (u8, u8)> {
 
 fn parse_time_signature(i: &str) -> IResult<&str, InputType> {
     map(
-        map_parser(
+        preceded(
             tag("ts "),
             separated_list0(tag(" "), parse_individual_time_signature),
         ),

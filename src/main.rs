@@ -5,5 +5,5 @@ use metronome::Metronome;
 #[tokio::main]
 async fn main() {
     let mut metronome = Metronome::default();
-    metronome.start_metronome().await;
+    metronome.start_metronome();
 }

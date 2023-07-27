@@ -14,12 +14,12 @@ pub struct Metronome {
 }
 
 impl Metronome {
-    pub async fn start_metronome(&mut self) {
+    pub fn start_metronome(&mut self) {
         // Show help info
         println!("{self}");
 
         // Start the metronome with default tempo
-        self.restart_task().await;
+        self.restart_task();
         let mut editor = get_repl();
 
         // Start the input loop - This reads user input and handles accordingly to event type.
@@ -27,8 +27,9 @@ impl Metronome {
             let line = editor.readline(">>> ").unwrap();
             let line_lower = line.to_lowercase();
             let input_type = InputType::parse(line_lower.trim());
+            println!("{input_type:?}");
             match input_type {
-                Ok((_, valid_input)) => self.handle_input_event(valid_input).await,
+                Ok((_, valid_input)) => self.handle_input_event(valid_input),
                 Err(_) => {
                     println!("Issue with command! Please enter 'help' for further instruction.")
                 }
@@ -36,7 +37,7 @@ impl Metronome {
         }
     }
 
-    async fn handle_input_event(&mut self, e: InputType) {
+    fn handle_input_event(&mut self, e: InputType) {
         // Input event handler. Takes the type of the input event and updates the state
         // accordingly or exits the application.
         match e {
@@ -49,27 +50,32 @@ impl Metronome {
                 std::process::exit(0);
             }
         }
-        self.restart_task().await;
+        self.restart_task();
     }
 
-    async fn restart_task(&mut self) {
+    fn restart_task(&mut self) {
         // Cancel the current task and instantiate a new task with a fresh cancellation token
         self.current_token.cancel();
+        println!("cancelled token");
         self.current_token = CancellationToken::new();
 
+        println!("new token");
         // Clone the current state post previous user input from which to construct the new task.
         let cloned_token = self.current_token.clone();
         let db = self.downbeat;
         let ts = self.time_signature.clone();
         let tempo = self.tempo;
+        println!("{db:?}");
+        println!("{ts:?}");
+        println!("{tempo:?}");
 
         let _ = tokio::spawn(async move {
             tokio::select! {
                 _ = cloned_token.cancelled() => {}
                 _ =  Metronome::play(tempo, db, ts)  => {}
             }
-        })
-        .await;
+        });
+        
     }
 
     async fn play(tempo: u16, with_downbeat: bool, time_signature: Vec<(u8, u8)>) {
