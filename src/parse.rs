@@ -16,7 +16,7 @@ pub enum InputType {
 }
 
 impl InputType {
-    pub fn parse(input:&str) -> IResult<&str, InputType> {
+    pub fn parse(input: &str) -> IResult<&str, InputType> {
         alt((
             parse_time_signature,
             parse_bpm,
@@ -32,16 +32,23 @@ fn parse_individual_time_signature(i: &str) -> IResult<&str, (u8, u8)> {
 }
 
 fn parse_time_signature(i: &str) -> IResult<&str, InputType> {
-    map(map_parser(tag("ts "), separated_list0(tag(" "), parse_individual_time_signature)), InputType::TimeSignatureChange)(i)
+    map(
+        map_parser(
+            tag("ts "),
+            separated_list0(tag(" "), parse_individual_time_signature),
+        ),
+        InputType::TimeSignatureChange,
+    )(i)
 }
-
 
 fn parse_bpm(i: &str) -> IResult<&str, InputType> {
     map(preceded(tag("bpm "), u16), InputType::TempoChange)(i)
 }
 
 fn parse_downbeat_toggle(i: &str) -> IResult<&str, InputType> {
-    map(alt((tag("db"), tag("downbeat"))), |_: &str| InputType::DownbeatToggle)(i)
+    map(alt((tag("db"), tag("downbeat"))), |_: &str| {
+        InputType::DownbeatToggle
+    })(i)
 }
 
 fn parse_help(i: &str) -> IResult<&str, InputType> {
@@ -49,13 +56,7 @@ fn parse_help(i: &str) -> IResult<&str, InputType> {
 }
 
 fn parse_quit(i: &str) -> IResult<&str, InputType> {
-    map(alt((tag("q"), tag("quit"), tag("exit"))), |_: &str| InputType::Quit)(i)
-}
-
-#[cfg(test)]
-mod test {
-
-    #[test]
-    fn test_1() {
-    }
+    map(alt((tag("q"), tag("quit"), tag("exit"))), |_: &str| {
+        InputType::Quit
+    })(i)
 }

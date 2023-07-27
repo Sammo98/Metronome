@@ -14,13 +14,12 @@ pub struct Metronome {
 }
 
 impl Metronome {
-    pub fn start_metronome(&mut self) {
-
+    pub async fn start_metronome(&mut self) {
         // Show help info
         println!("{self}");
 
         // Start the metronome with default tempo
-        self.restart_task();
+        self.restart_task().await;
         let mut editor = get_repl();
 
         // Start the input loop - This reads user input and handles accordingly to event type.
@@ -29,15 +28,15 @@ impl Metronome {
             let line_lower = line.to_lowercase();
             let input_type = InputType::parse(line_lower.trim());
             match input_type {
-                Ok((_, valid_input)) => self.handle_input_event(valid_input),
-                Err(_) => println!(
-                    "Issue with command! Please enter 'help' for further instruction."
-                ),
+                Ok((_, valid_input)) => self.handle_input_event(valid_input).await,
+                Err(_) => {
+                    println!("Issue with command! Please enter 'help' for further instruction.")
+                }
             }
         }
     }
 
-    fn handle_input_event(&mut self, e: InputType) {
+    async fn handle_input_event(&mut self, e: InputType) {
         // Input event handler. Takes the type of the input event and updates the state
         // accordingly or exits the application.
         match e {
@@ -50,10 +49,10 @@ impl Metronome {
                 std::process::exit(0);
             }
         }
-        self.restart_task();
+        self.restart_task().await;
     }
 
-    fn restart_task(&mut self) {
+    async fn restart_task(&mut self) {
         // Cancel the current task and instantiate a new task with a fresh cancellation token
         self.current_token.cancel();
         self.current_token = CancellationToken::new();
@@ -69,7 +68,8 @@ impl Metronome {
                 _ = cloned_token.cancelled() => {}
                 _ =  Metronome::play(tempo, db, ts)  => {}
             }
-        });
+        })
+        .await;
     }
 
     async fn play(tempo: u16, with_downbeat: bool, time_signature: Vec<(u8, u8)>) {
@@ -99,7 +99,7 @@ impl Metronome {
         }
     }
 
-    fn calculate_pause_durations(time_signatures: &Vec<(u8, u8)>, pause: u64) -> HashMap<&u8, u64> {
+    fn calculate_pause_durations(time_signatures: &[(u8, u8)], pause: u64) -> HashMap<&u8, u64> {
         // Create a hashmap of time signature denominator to recalculated pause length.
         // Default pause length is calculated based off of crochets/quarter notes, so we can bit
         // shift in either direction to double / half the pause value
