@@ -1,7 +1,7 @@
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{char, u16, u8};
-use nom::combinator::{map, map_parser};
+use nom::combinator::map;
 use nom::multi::separated_list0;
 use nom::sequence::{preceded, separated_pair};
 use nom::IResult;
@@ -31,18 +31,28 @@ fn parse_individual_time_signature(i: &str) -> IResult<&str, (u8, u8)> {
     separated_pair(u8, char('/'), u8)(i)
 }
 
+fn parse_time_signatures_to_vec(i: &str) -> IResult<&str, Vec<(u8, u8)>> {
+    separated_list0(tag(" "), parse_individual_time_signature)(i)
+}
+
 fn parse_time_signature(i: &str) -> IResult<&str, InputType> {
     map(
         preceded(
-            tag("ts "),
-            separated_list0(tag(" "), parse_individual_time_signature),
+            alt((tag("ts "), tag("time signature "))),
+            parse_time_signatures_to_vec
         ),
         InputType::TimeSignatureChange,
     )(i)
 }
 
 fn parse_bpm(i: &str) -> IResult<&str, InputType> {
-    map(preceded(tag("bpm "), u16), InputType::TempoChange)(i)
+    map(
+        preceded(
+            alt((tag("bpm "), tag("tempo "))),
+            u16
+        ),
+        InputType::TempoChange
+    )(i)
 }
 
 fn parse_downbeat_toggle(i: &str) -> IResult<&str, InputType> {
@@ -59,4 +69,68 @@ fn parse_quit(i: &str) -> IResult<&str, InputType> {
     map(alt((tag("q"), tag("quit"), tag("exit"))), |_: &str| {
         InputType::Quit
     })(i)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn assert_variant(actual:&InputType, expected:&InputType) {
+        assert_eq!(std::mem::discriminant(actual), std::mem::discriminant(expected));
+    }
+
+    #[test]
+    fn test_parse_help(){
+        let actual = parse_help("h").unwrap().1;
+        let expected = InputType::Help;
+        assert_variant(&actual, &expected);
+
+        let actual = parse_help("help").unwrap().1;
+        assert_variant(&actual, &expected);
+    }
+
+    #[test] 
+    fn test_parse_quit(){
+
+        let actual = parse_quit("q").unwrap().1;
+        let expected = InputType::Quit;
+        assert_variant(&actual, &expected);
+
+        let actual = parse_quit("quit").unwrap().1;
+        assert_variant(&actual, &expected);
+
+        let actual = parse_quit("quit").unwrap().1;
+        assert_variant(&actual, &expected);
+    }
+
+    #[test]
+    fn test_parse_downbeat_toggle() {
+        let actual = parse_downbeat_toggle("db").unwrap().1;
+        let expected = InputType::DownbeatToggle;
+        assert_variant(&actual, &expected);
+
+        let actual = parse_downbeat_toggle("downbeat").unwrap().1;
+        assert_variant(&actual, &expected);
+    }
+
+    #[test]
+    fn test_parse_time_signature() {
+        let actual = parse_time_signature("ts 4/4").unwrap().1;
+        let expected = InputType::TimeSignatureChange(vec![]);
+        assert_variant(&actual, &expected);
+
+        let actual = parse_time_signature("time signature 4/4 3/4").unwrap().1;
+        assert_variant(&actual, &expected);
+    }
+
+    #[test]
+    fn test_parse_bpm() {
+        let actual = parse_bpm("bpm 200").unwrap().1;
+        let expected = InputType::TempoChange(0_u16);
+        assert_variant(&actual, &expected);
+
+        let actual = parse_bpm("tempo 200").unwrap().1;
+        assert_variant(&actual, &expected);
+    }
+
 }
