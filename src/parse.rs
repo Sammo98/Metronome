@@ -6,10 +6,10 @@ use nom::multi::separated_list0;
 use nom::sequence::{preceded, separated_pair};
 use nom::IResult;
 
-#[derive(Debug)]
 pub enum InputType {
     TempoChange(u16),
     TimeSignatureChange(Vec<(u8, u8)>),
+    StartStop,
     DownbeatToggle,
     Quit,
     Help,
@@ -23,6 +23,7 @@ impl InputType {
             parse_downbeat_toggle,
             parse_help,
             parse_quit,
+            parse_start_stop
         ))(input)
     }
 }
@@ -69,6 +70,14 @@ fn parse_quit(i: &str) -> IResult<&str, InputType> {
     map(alt((tag("q"), tag("quit"), tag("exit"))), |_: &str| {
         InputType::Quit
     })(i)
+}
+
+fn parse_start_stop(i: &str) -> IResult<&str, InputType> {
+    map(
+        tag(""), 
+        |_: &str| InputType::StartStop 
+    )
+    (i)
 }
 
 #[cfg(test)]
@@ -132,5 +141,23 @@ mod test {
         let actual = parse_bpm("tempo 200").unwrap().1;
         assert_variant(&actual, &expected);
     }
+
+    #[test]
+    fn test_parse_individual_time_signature() {
+        let actual = parse_individual_time_signature("3/4").unwrap().1;
+        assert_eq!(actual, (3_u8, 4_u8));
+    }
+
+    #[test]
+    fn test_parse_multiple_time_signature() {
+        let actual = parse_time_signatures_to_vec("3/4 4/4 5/4").unwrap().1;
+        let expected = vec![
+            (3_u8, 4_u8),
+            (4_u8, 4_u8),
+            (5_u8, 4_u8),
+        ];
+        assert_eq!(actual, expected);
+    }
+
 
 }
